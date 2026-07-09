@@ -4,21 +4,21 @@ const ContactSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
-    trim: true
   },
   email: {
     type: String,
     required: true,
-    trim: true
+  },
+  // 🌟 تعديل الـ subject ليكون اختيارياً أو إعطائه قيمة افتراضية
+  subject: {
+    type: String,
+    required: false, // 🟢 اجعلها false أو احذف السطر تماماً
+    default: "Contact Us Message" 
   },
   message: {
     type: String,
-    required: true
+    required: true,
   },
-  createdAt: {
-    type: Date,
-    default: Date.now 
-  }
-});
+}, { timestamps: true });
 
 module.exports = mongoose.model("Contact", ContactSchema);
