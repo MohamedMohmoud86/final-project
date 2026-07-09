@@ -117,24 +117,28 @@ app.post(
 
       const hashedPassword = await bcrypt.hash(password, 10);
 
-      const user = await User.create({
-        name,
-        email,
-        password: hashedPassword,
-        otp: generatedOTP,
-        otpCreatedAt: Date.now(),
-        isVerified: false,
-      });
+   const user = await User.create({
+  name,
+  email,
+  password: hashedPassword,
+  otp: generatedOTP,
+  otpCreatedAt: Date.now(),
+  isVerified: false,
+});
 
-      await sendOTPEmail(user.email, generatedOTP, user.name);
+try {
+  await sendOTPEmail(user.email, generatedOTP, user.name);
+} catch (mailErr) {
+  console.error("Mailer Error:", mailErr.message);
+}
 
-      res.json({
-        message: "OTP sent successfully",
-        user: {
-          email: user.email,
-          otpCreatedAt: user.otpCreatedAt
-        }
-      });
+return res.status(200).json({
+  message: "User registered successfully",
+  user: {
+    email: user.email,
+    otpCreatedAt: user.otpCreatedAt,
+  },
+});
     } catch (err) {
       res.status(500).json(err);
     }
