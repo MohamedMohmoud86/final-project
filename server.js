@@ -65,7 +65,7 @@ app.use("/api", apiLimiter);
 
 
 app.use("/api/products", productRoutes);
-app.use("/api", contactRoutes);
+
 app.use("/api/orders", orderRoutes); 
 
 const authMiddleware = require("./middleware/authMiddleware");
