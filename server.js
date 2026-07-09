@@ -9,14 +9,13 @@ const jwt = require("jsonwebtoken");
 const orderRoutes = require("./routes/orderRoutes");
 const User = require("./models/User");
 const Notification = require("./models/Notification"); 
-
+const Contact = require("./models/Contact"); 
 
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const { body, validationResult } = require("express-validator"); 
 const app = express();
 const sendOTPEmail = require("./utils/mailer");
-
 
 app.use(cors({
   origin: ["http://localhost:3000", "https://final-project-production-3b18.up.railway.app"],
@@ -25,15 +24,11 @@ app.use(cors({
   allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
-
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
 app.use(express.json()); 
-
-
-
 
 const cleanNoSQLInjection = (obj) => {
   if (obj && typeof obj === 'object') {
@@ -65,8 +60,46 @@ app.use("/api", apiLimiter);
 
 
 app.use("/api/products", productRoutes);
-
 app.use("/api/orders", orderRoutes); 
+
+
+app.post(
+  "/api/contact", 
+  [
+    body("name").trim().notEmpty().withMessage("Name is required and cannot be empty"),
+    body("email").trim().isEmail().withMessage("Please enter a valid email address").normalizeEmail(),
+    body("message").isLength({ min: 10 }).withMessage("Message must be at least 10 characters long")
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+      const { name, email, message } = req.body;
+
+     
+      const newDoc = await Contact.create({ 
+        name, 
+        email, 
+        subject: "Contact Us Message", 
+        message 
+      });
+      console.log(`📩 Message saved to DB from: ${name} (ID: ${newDoc._id})`);
+
+      return res.status(200).json({ 
+        success: true,
+        message: "Your message has been received successfully! Thank you." 
+      });
+    } catch (err) {
+      console.error("DATABASE SAVE ERROR:", err);
+      return res.status(500).json({ 
+        message: "Failed to save your message. Internal Server Error."
+      });
+    }
+  }
+);
 
 const authMiddleware = require("./middleware/authMiddleware");
 
@@ -636,7 +669,7 @@ app.put("/api/notifications/read-all/:userId", async (req, res) => {
 /* =========================
         CONTACT US ROUTE
 ========================= */
-const Contact = require("./models/Contact");
+
 
 
 app.post(
