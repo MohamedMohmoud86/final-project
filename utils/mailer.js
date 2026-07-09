@@ -1,24 +1,20 @@
-const Brevo = require("@getbrevo/brevo");
+const nodemailer = require("nodemailer");
 
-
-const apiInstance = new Brevo.TransactionalEmailsApi({
-  apiKey: process.env.BREVO_API_KEY
+// 1. إعداد الـ Transport الخاص بالجيميل
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.SEND_EMAIL, 
+    pass: process.env.GMAIL_APP_PASSWORD, 
+  },
 });
 
 const sendOTPEmail = async (userEmail, generatedOTP, userName) => {
   try {
     
-    const sendSmtpEmail = {
-      sender: {
-        name: "Nova Online Store",
-        email: process.env.SENDER_EMAIL, 
-      },
-      to: [
-        {
-          email: userEmail,
-          name: userName,
-        },
-      ],
+    const mailOptions = {
+      from: `"Nova Online Store" <${process.env.SENDER_EMAIL}>`,
+      to: userEmail,
       subject: "Your OTP Verification Code",
       htmlContent: `
         <div style="font-family:Arial,sans-serif;padding:20px;max-width:500px;margin:auto;border:1px solid #eee;border-radius:10px">
@@ -40,19 +36,14 @@ const sendOTPEmail = async (userEmail, generatedOTP, userName) => {
       `,
     };
 
-    
-    const result = await apiInstance.sendTransacEmail(sendSmtpEmail);
-
-    console.log("✅ Email Sent Successfully via Brevo!");
-    return result;
+   
+    const info = await transporter.sendMail(mailOptions);
+    console.log("✅ Email Sent Successfully via Gmail! MessageID:", info.messageId);
+    return info;
 
   } catch (err) {
-    console.error("❌ BREVO ERROR DETECTED:");
-    if (err.response && err.response.body) {
-      console.error(JSON.stringify(err.response.body, null, 2));
-    } else {
-      console.error(err.message || err);
-    }
+    console.error("❌ GMAIL NODEMAILER ERROR:");
+    console.error(err.message || err);
     throw err;
   }
 };
