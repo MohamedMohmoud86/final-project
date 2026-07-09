@@ -11,15 +11,28 @@ const User = require("./models/User");
 const Notification = require("./models/Notification"); 
 const contactRoutes = require("./routes/contact");
 
-
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const { body, validationResult } = require("express-validator"); 
 const app = express();
 const sendOTPEmail = require("./utils/mailer");
-app.use(helmet());
-app.use(cors());
+
+
+app.use(cors({
+  origin: ["http://localhost:3000", "https://final-project-production-3b18.up.railway.app"],
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
+
+
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
+
 app.use(express.json()); 
+
+
 
 
 const cleanNoSQLInjection = (obj) => {
