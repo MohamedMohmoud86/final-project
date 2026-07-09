@@ -25,7 +25,16 @@ const sendOTPEmail = async (userEmail, generatedOTP, userName) => {
     `,
   };
 
-  await transporter.sendMail(mailOptions);
+try {
+  await transporter.verify();
+  console.log("✅ SMTP Connected");
+
+  const info = await transporter.sendMail(mailOptions);
+  console.log(info);
+} catch (err) {
+  console.error("SMTP ERROR:", err);
+  throw err;
+}
 };
 
 module.exports = sendOTPEmail;
