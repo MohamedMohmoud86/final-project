@@ -380,6 +380,51 @@ app.post(
 );
 
 
+app.post(
+  "/api/google-login",
+  cors({
+    origin: "https://final-project-frontend-amber.vercel.app",
+    credentials: true,
+    methods: ["POST", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"]
+  }),
+  async (req, res) => {
+    try {
+      const { name, email, uid } = req.body;
+
+      
+      let user = await User.findOne({ email });
+      if (!user) {
+        user = await User.create({
+          name,
+          email,
+          password: await bcrypt.hash(uid, 10),
+          isVerified: true
+        });
+      }
+
+      
+      const token = jwt.sign(
+        { id: user._id, email: user.email },
+        "secretKey",
+        { expiresIn: "1d" }
+      );
+
+      return res.json({
+        message: "Google Login successful",
+        token,
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+        },
+      });
+    } catch (err) {
+      return res.status(500).json({ message: "Internal Server Error", error: err.message });
+    }
+  }
+);
+
 
 
 /* =========================
