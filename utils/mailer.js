@@ -1,40 +1,58 @@
-const nodemailer = require("nodemailer");
+const Brevo = require("@getbrevo/brevo");
 
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
-  port: Number(process.env.EMAIL_PORT),
-  secure: false,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+const apiInstance = new Brevo.TransactionalEmailsApi();
+
+apiInstance.setApiKey(
+  Brevo.TransactionalEmailsApiApiKeys.apiKey,
+  process.env.BREVO_API_KEY
+);
 
 const sendOTPEmail = async (userEmail, generatedOTP, userName) => {
-  const mailOptions = {
-    from: process.env.EMAIL_FROM,
-    to: userEmail,
-    subject: "Your OTP Verification Code",
-    html: `
-      <h2>Hello ${userName}</h2>
-      <h3>Your OTP Code</h3>
+  try {
+    const email = new Brevo.SendSmtpEmail();
 
-      <h1>${generatedOTP}</h1>
+    email.sender = {
+      name: "Nova Online Store",
+      email: process.env.SENDER_EMAIL,
+    };
 
-      <p>This code expires after 2 minutes.</p>
-    `,
-  };
+    email.to = [
+      {
+        email: userEmail,
+        name: userName,
+      },
+    ];
 
-try {
-  await transporter.verify();
-  console.log("✅ SMTP Connected");
+    email.subject = "Your OTP Verification Code";
 
-  const info = await transporter.sendMail(mailOptions);
-  console.log(info);
-} catch (err) {
-  console.error("SMTP ERROR:", err);
-  throw err;
-}
+    email.htmlContent = `
+      <div style="font-family:Arial,sans-serif;padding:20px">
+        <h2>Hello ${userName}</h2>
+
+        <p>Your verification code is:</p>
+
+        <h1 style="
+            color:#0d6efd;
+            letter-spacing:6px;
+            font-size:40px;
+        ">
+          ${generatedOTP}
+        </h1>
+
+        <p>This code expires in 2 minutes.</p>
+      </div>
+    `;
+
+    const result = await apiInstance.sendTransacEmail(email);
+
+    console.log("✅ Email Sent");
+    console.log(result.body);
+
+  } catch (err) {
+    console.error("BREVO ERROR");
+    console.error(err);
+    throw err;
+  }
 };
 
 module.exports = sendOTPEmail;
