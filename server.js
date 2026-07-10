@@ -759,6 +759,25 @@ app.post(
 );
 
 
+
+app.get("/api/admin/contact", async (req, res) => {
+  try {
+    const messages = await Contact.find().sort({ createdAt: -1 });
+    res.json(messages);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch messages" });
+  }
+});
+
+app.delete("/api/admin/contact/:id", async (req, res) => {
+  try {
+    await Contact.findByIdAndDelete(req.params.id);
+    res.json({ message: "Message deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to delete message" });
+  }
+});
+
 /* =========================
           SERVER
 ========================= */
