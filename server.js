@@ -10,7 +10,7 @@ const orderRoutes = require("./routes/orderRoutes");
 const User = require("./models/User");
 const Notification = require("./models/Notification"); 
 const Contact = require("./models/Contact"); 
-
+const adminMiddleware = require("./middleware/authMiddleware");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const { body, validationResult } = require("express-validator"); 
@@ -107,7 +107,27 @@ app.post(
   }
 );
 
+
+app.get("/api/admin/contact", adminMiddleware, async (req, res) => {
+  try {
+    const messages = await Contact.find().sort({ createdAt: -1 });
+    res.json(messages);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch messages" });
+  }
+});
+
+app.delete("/api/admin/contact/:id", adminMiddleware, async (req, res) => {
+  try {
+    await Contact.findByIdAndDelete(req.params.id);
+    res.json({ message: "Message deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to delete message" });
+  }
+});
+
 const authMiddleware = require("./middleware/authMiddleware");
+
 
 /* =========================
       PROTECTED ROUTE
@@ -425,6 +445,56 @@ app.post(
   }
 );
 
+
+
+app.post("/api/auth/google-login", async (req, res) => {
+  try {
+    const { email, name } = req.body; 
+
+   
+    const myAdminEmail = "novastore156@gmail.com"; 
+
+    
+    let user = await User.findOne({ email });
+
+    if (!user) {
+     
+      user = new User({
+        name,
+        email,
+       
+        role: email === myAdminEmail ? "admin" : "user" 
+      });
+      await user.save();
+    } else {
+      
+      if (email === myAdminEmail && user.role !== "admin") {
+        user.role = "admin";
+        await user.save();
+      }
+    }
+
+    
+    const token = jwt.sign(
+      { id: user._id, role: user.role }, 
+      process.env.JWT_SECRET, 
+      { expiresIn: "7d" }
+    );
+
+    res.json({
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role 
+      }
+    });
+
+  } catch (err) {
+    res.status(500).json({ message: "Google Auth Failed" });
+  }
+});
 
 
 /* =========================
