@@ -642,7 +642,7 @@ app.post("/api/payment", async (req, res) => {
 
 
 app.get("/api/payment/callback", async (req, res) => {
-  console.log( req.query);
+  console.log(req.query);
   
   const success = req.query.success;
   const mongoOrderId = req.query.merchant_order_id || req.query.order || req.query.id;
@@ -663,31 +663,32 @@ app.get("/api/payment/callback", async (req, res) => {
         }
 
         if (order) {
-          order.paymentStatus = "paid";
+          order.paymentStatus = "Paid"; 
           order.status = "Confirmed";
           await order.save();
 
-          console.log(`${order.userId}`);
+          console.log(`Order updated to Paid: ${order._id}`);
 
           await Notification.create({
             userId: order.userId, 
             title: "Payment Successful! 🎉",
             message: `Your order for $${order.totalPrice || order.total || 0} has been successfully paid and confirmed.`
           });
-          console.log(` ${order.userId}`);
         } else {
-          console.log(mongoOrderId);
+          console.log(`Order not found for ID: ${mongoOrderId}`);
         }
       }
       
-      return res.redirect("http://localhost:3000/orders?success=true&merchant_order_id=" + mongoOrderId);
+      
+      return res.redirect("https://final-project-frontend-amber.vercel.app/orders?success=true&merchant_order_id=" + mongoOrderId);
 
     } catch (err) {
-      console.error( err.message);
-      return res.redirect("http://localhost:3000/orders?success=true&merchant_order_id=" + mongoOrderId);
+      console.error(err.message);
+      return res.redirect("https://final-project-frontend-amber.vercel.app/orders?success=true&merchant_order_id=" + mongoOrderId);
     }
   } else {
-    return res.redirect("http://localhost:3000/orders?success=false");
+   
+    return res.redirect("https://final-project-frontend-amber.vercel.app/orders?success=false");
   }
 });
 
