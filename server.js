@@ -68,62 +68,7 @@ app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes); 
 
 
-app.post(
-  "/api/contact", 
-  [
-    body("name").trim().notEmpty().withMessage("Name is required and cannot be empty"),
-    body("email").trim().isEmail().withMessage("Please enter a valid email address").normalizeEmail(),
-    body("message").isLength({ min: 10 }).withMessage("Message must be at least 10 characters long")
-  ],
-  async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
 
-    try {
-      const { name, email, message } = req.body;
-
-     
-      const newDoc = await Contact.create({ 
-        name, 
-        email, 
-        subject: "Contact Us Message", 
-        message 
-      });
-      console.log(`📩 Message saved to DB from: ${name} (ID: ${newDoc._id})`);
-
-      return res.status(200).json({ 
-        success: true,
-        message: "Your message has been received successfully! Thank you." 
-      });
-    } catch (err) {
-      console.error("DATABASE SAVE ERROR:", err);
-      return res.status(500).json({ 
-        message: "Failed to save your message. Internal Server Error."
-      });
-    }
-  }
-);
-
-
-app.get("/api/admin/contact", adminMiddleware, async (req, res) => {
-  try {
-    const messages = await Contact.find().sort({ createdAt: -1 });
-    res.json(messages);
-  } catch (err) {
-    res.status(500).json({ message: "Failed to fetch messages" });
-  }
-});
-
-app.delete("/api/admin/contact/:id", adminMiddleware, async (req, res) => {
-  try {
-    await Contact.findByIdAndDelete(req.params.id);
-    res.json({ message: "Message deleted successfully" });
-  } catch (err) {
-    res.status(500).json({ message: "Failed to delete message" });
-  }
-});
 
 const authMiddleware = require("./middleware/authMiddleware");
 
@@ -751,12 +696,9 @@ app.put("/api/notifications/read-all/:userId", async (req, res) => {
 });
 
 
-/* =========================
-        CONTACT US ROUTE
-========================= */
+// =========================================================
 
-
-
+// =========================================================
 app.post(
   "/api/contact", 
   [
@@ -765,8 +707,6 @@ app.post(
     body("message").isLength({ min: 10 }).withMessage("Message must be at least 10 characters long")
   ],
   async (req, res) => {
-    
-   
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
@@ -775,8 +715,13 @@ app.post(
     try {
       const { name, email, message } = req.body;
 
-      const newDoc = await Contact.create({ name, email, message });
-      console.log(` Message saved to DB from: ${name} (ID: ${newDoc._id})`);
+      const newDoc = await Contact.create({ 
+        name, 
+        email, 
+        subject: "Contact Us Message", 
+        message 
+      });
+      console.log(`📩 Message saved to DB from: ${name} (ID: ${newDoc._id})`);
 
       return res.status(200).json({ 
         success: true,
@@ -792,24 +737,30 @@ app.post(
 );
 
 
-
-app.get("/api/admin/contact", async (req, res) => {
+app.get("/api/admin/contact", adminMiddleware, async (req, res) => {
   try {
     const messages = await Contact.find().sort({ createdAt: -1 });
-    res.json(messages);
+    return res.json(messages);
   } catch (err) {
-    res.status(500).json({ message: "Failed to fetch messages" });
+    console.error("Fetch contact error:", err);
+    return res.status(500).json({ message: "Failed to fetch messages" });
   }
 });
 
-app.delete("/api/admin/contact/:id", async (req, res) => {
+
+app.delete("/api/admin/contact/:id", adminMiddleware, async (req, res) => {
   try {
     await Contact.findByIdAndDelete(req.params.id);
-    res.json({ message: "Message deleted successfully" });
+    return res.json({ message: "Message deleted successfully" });
   } catch (err) {
-    res.status(500).json({ message: "Failed to delete message" });
+    console.error("Delete contact error:", err);
+    return res.status(500).json({ message: "Failed to delete message" });
   }
 });
+
+
+
+
 
 /* =========================
           SERVER
