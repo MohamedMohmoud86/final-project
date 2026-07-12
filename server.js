@@ -327,17 +327,19 @@ app.post(
 );
 
 
+const corsOptions = cors({ 
+  origin: "https://final-project-frontend-amber.vercel.app",
+  credentials: true,
+  methods: ["POST", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+});
+
 /* =========================
             LOGIN API 
 ========================= */
 app.post(
   "/api/login",
-  cors({ 
-    origin: "https://final-project-frontend-amber.vercel.app",
-    credentials: true,
-    methods: ["POST", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"]
-  }),
+  corsOptions,
   [
     body("email").trim().normalizeEmail().isEmail().withMessage("Please enter a valid email address"),
     body("password").notEmpty().withMessage("Password field cannot be empty")
@@ -365,10 +367,11 @@ app.post(
         return res.status(400).json({ message: "Invalid credentials" });
       }
 
+      
       const token = jwt.sign(
-        { id: user._id, email: user.email },
-        "secretKey",
-        { expiresIn: "1d" }
+        { id: user._id, role: user.role || "user", email: user.email },
+        process.env.JWT_SECRET || "secretKey",
+        { expiresIn: "7d" }
       );
 
       try {
@@ -378,7 +381,7 @@ app.post(
           message: `Hello ${user.name}, you have successfully logged in.`
         });
       } catch (notifErr) {
-        console.error(" Failed to create login notification:", notifErr.message);
+        console.error("Failed to create login notification:", notifErr.message);
       }
 
       return res.json({
@@ -388,6 +391,7 @@ app.post(
           id: user._id,
           name: user.name,
           email: user.email,
+          role: user.role || "user" 
         },
       });
 
@@ -399,34 +403,41 @@ app.post(
 );
 
 
+// ==========================================
+
+// ==========================================
 app.post(
   "/api/google-login",
-  cors({
-    origin: "https://final-project-frontend-amber.vercel.app",
-    credentials: true,
-    methods: ["POST", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"]
-  }),
+  corsOptions,
   async (req, res) => {
     try {
       const { name, email, uid } = req.body;
+      const myAdminEmail = "novastore156@gmail.com"; 
 
-      
       let user = await User.findOne({ email });
+
       if (!user) {
+       
         user = await User.create({
           name,
           email,
-          password: await bcrypt.hash(uid, 10),
-          isVerified: true
+          password: await bcrypt.hash(uid || "google-auth-fallback-password", 10),
+          isVerified: true,
+          role: email === myAdminEmail ? "admin" : "user"
         });
+      } else {
+       
+        if (email === myAdminEmail && user.role !== "admin") {
+          user.role = "admin";
+          await user.save();
+        }
       }
 
-      
+     
       const token = jwt.sign(
-        { id: user._id, email: user.email },
-        "secretKey",
-        { expiresIn: "1d" }
+        { id: user._id, role: user.role, email: user.email },
+        process.env.JWT_SECRET || "secretKey", 
+        { expiresIn: "7d" }
       );
 
       return res.json({
@@ -436,64 +447,16 @@ app.post(
           id: user._id,
           name: user.name,
           email: user.email,
+          role: user.role
         },
       });
+
     } catch (err) {
-      return res.status(500).json({ message: "Internal Server Error", error: err.message });
+      console.error("GOOGLE AUTH CRASH:", err.message);
+      return res.status(500).json({ message: "Google Auth Failed", error: err.message });
     }
   }
 );
-
-
-
-app.post("/api/auth/google-login", async (req, res) => {
-  try {
-    const { email, name } = req.body; 
-
-   
-    const myAdminEmail = "novastore156@gmail.com"; 
-
-    
-    let user = await User.findOne({ email });
-
-    if (!user) {
-     
-      user = new User({
-        name,
-        email,
-       
-        role: email === myAdminEmail ? "admin" : "user" 
-      });
-      await user.save();
-    } else {
-      
-      if (email === myAdminEmail && user.role !== "admin") {
-        user.role = "admin";
-        await user.save();
-      }
-    }
-
-    
-    const token = jwt.sign(
-      { id: user._id, role: user.role, email: user.email },
-      process.env.JWT_SECRET, 
-      { expiresIn: "7d" }
-    );
-
-    res.json({
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role 
-      }
-    });
-
-  } catch (err) {
-    res.status(500).json({ message: "Google Auth Failed" });
-  }
-});
 
 
 /* =========================
