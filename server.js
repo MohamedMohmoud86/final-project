@@ -17,7 +17,6 @@ const { body, validationResult } = require("express-validator");
 const app = express();
 const sendOTPEmail = require("./utils/mailer");
 
-
 app.use(cors({
   origin: "https://final-project-frontend-amber.vercel.app", 
   credentials: true,
@@ -476,7 +475,7 @@ app.post("/api/auth/google-login", async (req, res) => {
 
     
     const token = jwt.sign(
-      { id: user._id, role: user.role }, 
+      { id: user._id, role: user.role, email: user.email },
       process.env.JWT_SECRET, 
       { expiresIn: "7d" }
     );
